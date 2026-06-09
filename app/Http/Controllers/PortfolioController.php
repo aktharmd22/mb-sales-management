@@ -1,0 +1,119 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\PortfolioItem;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+
+class PortfolioController extends Controller
+{
+    public function store(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $data = $this->validateItem($request, null);
+        $type = $data['type'];
+
+        $item = new PortfolioItem();
+        $item->type = $type;
+        $item->title = $data['title'];
+        $item->description = $data['description'] ?? null;
+        $item->url = $data['url'] ?? null;
+        $item->credentials = $type === 'website' ? $this->cleanCredentials($request) : null;
+        $item->uploaded_by = $request->user()->id;
+        $item->is_active = true;
+
+        if ($request->hasFile('image')) {
+            $item->image_path = $request->file('image')->store('portfolio', 'public');
+        }
+
+        $item->save();
+
+        return redirect()->route('portfolio.index', ['tab' => $type])->with('flash', PortfolioItem::label($type) . ' item added.');
+    }
+
+    public function update(Request $request, PortfolioItem $item): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $data = $this->validateItem($request, $item);
+
+        $item->title = $data['title'];
+        $item->description = $data['description'] ?? null;
+        $item->url = $data['url'] ?? null;
+        if ($item->type === 'website') {
+            $item->credentials = $this->cleanCredentials($request);
+        }
+
+        if ($request->hasFile('image')) {
+            if ($item->image_path) {
+                Storage::disk('public')->delete($item->image_path);
+            }
+            $item->image_path = $request->file('image')->store('portfolio', 'public');
+        }
+
+        $item->save();
+
+        return redirect()->route('portfolio.index', ['tab' => $item->type])->with('flash', 'Item updated.');
+    }
+
+    public function destroy(Request $request, PortfolioItem $item): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        $type = $item->type;
+
+        if ($item->image_path) {
+            Storage::disk('public')->delete($item->image_path);
+        }
+        $item->delete();
+
+        return redirect()->route('portfolio.index', ['tab' => $type])->with('flash', 'Item removed.');
+    }
+
+    private function validateItem(Request $request, ?PortfolioItem $item): array
+    {
+        $type = $item->type ?? $request->input('type');
+        $hasExistingImage = $item && $item->image_path;
+        $urlProvided = filled($request->input('url'));
+
+        // Automations need an image. Graphics need an image OR an Instagram URL.
+        $imageRequired = match ($type) {
+            'automation' => ! $hasExistingImage,
+            'graphic' => ! $hasExistingImage && ! $urlProvided,
+            default => false,
+        };
+
+        $messages = [
+            'image.required' => $type === 'graphic'
+                ? 'Add an image or an Instagram link.'
+                : 'An image is required.',
+        ];
+
+        return $request->validate([
+            'type' => [$item ? 'nullable' : 'required', Rule::in(array_keys(PortfolioItem::TYPES))],
+            'title' => ['required', 'string', 'max:160'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            // Required for websites & videos; optional Instagram link for graphics.
+            'url' => [in_array($type, ['website', 'video']) ? 'required' : 'nullable', 'url', 'max:500'],
+            'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'max:8192'], // 8 MB
+        ], $messages);
+    }
+
+    /** Keep only credential rows that actually have something filled in. */
+    private function cleanCredentials(Request $request): array
+    {
+        return collect($request->input('credentials', []))
+            ->map(fn ($row) => [
+                'label' => trim($row['label'] ?? ''),
+                'username' => trim($row['username'] ?? ''),
+                'password' => trim($row['password'] ?? ''),
+                'url' => trim($row['url'] ?? ''),
+            ])
+            ->filter(fn ($row) => $row['label'] !== '' || $row['username'] !== '' || $row['password'] !== '')
+            ->values()
+            ->all();
+    }
+}
