@@ -143,20 +143,21 @@
 
                         <div class="mt-5 space-y-4">
                             <div>
-                                <label class="label">Title</label>
-                                <input type="text" name="title" value="{{ old('title') }}" class="input" placeholder="e.g. Company Profile 2026" required />
+                                <label class="label">PDF files <span class="text-ink-700/40">(select one or many — max 20 MB each)</span></label>
+                                <input type="file" name="files[]" accept="application/pdf" multiple required
+                                       class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />
+                                @error('files') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                                @error('files.*') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="label">Title <span class="text-ink-700/40">(optional — used for a single file; otherwise the file name)</span></label>
+                                <input type="text" name="title" value="{{ old('title') }}" class="input" placeholder="e.g. Company Profile 2026" />
                                 @error('title') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="label">Description <span class="text-ink-700/40">(optional)</span></label>
                                 <textarea name="description" rows="2" class="input" placeholder="What's in this document?">{{ old('description') }}</textarea>
                                 @error('description') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label class="label">PDF file (max 20 MB)</label>
-                                <input type="file" name="file" accept="application/pdf" required
-                                       class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />
-                                @error('file') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                             </div>
                         </div>
 

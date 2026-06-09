@@ -31,25 +31,38 @@ class CompanyDocumentController extends Controller
     {
         abort_unless($request->user()->isAdmin(), 403);
 
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:160'],
+        $request->validate([
+            'title' => ['nullable', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:500'],
-            'file' => ['required', 'file', 'mimes:pdf', 'max:20480'], // 20 MB
+            'files' => ['required', 'array', 'min:1'],
+            'files.*' => ['file', 'mimes:pdf', 'max:20480'], // 20 MB each
+        ], [
+            'files.required' => 'Choose at least one PDF.',
+            'files.*.mimes' => 'Every file must be a PDF.',
+            'files.*.max' => 'Each PDF must be 20 MB or smaller.',
         ]);
 
-        $file = $request->file('file');
-        $path = $file->store('company', 'local');
+        $files = $request->file('files');
+        $single = count($files) === 1;
 
-        CompanyDocument::create([
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'file_path' => $path,
-            'file_name' => $file->getClientOriginalName(),
-            'file_size' => $file->getSize(),
-            'uploaded_by' => $request->user()->id,
-            'is_active' => true,
-        ]);
+        foreach ($files as $file) {
+            CompanyDocument::create([
+                // Use the given title only when a single file is uploaded; otherwise the file name.
+                'title' => ($single && filled($request->title))
+                    ? $request->title
+                    : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'description' => $request->description ?: null,
+                'file_path' => $file->store('company', 'local'),
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'uploaded_by' => $request->user()->id,
+                'is_active' => true,
+            ]);
+        }
 
-        return redirect()->route('about.index')->with('flash', 'Document uploaded.');
+        $count = count($files);
+
+        return redirect()->route('about.index')
+            ->with('flash', $count . ' ' . str('document')->plural($count) . ' uploaded.');
     }
 }
