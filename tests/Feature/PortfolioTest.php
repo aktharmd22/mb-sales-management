@@ -101,6 +101,58 @@ class PortfolioTest extends TestCase
         $this->assertDatabaseHas('portfolio_items', ['title' => 'IG only graphic', 'type' => 'graphic']);
     }
 
+    public function test_admin_can_create_automation_without_image(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('portfolio.store'), ['type' => 'automation', 'title' => 'Onboarding Flow'])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('portfolio_items', ['type' => 'automation', 'title' => 'Onboarding Flow']);
+    }
+
+    public function test_admin_can_add_multiple_images_to_automation(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+        $item = PortfolioItem::create(['type' => 'automation', 'title' => 'Flow', 'is_active' => true, 'uploaded_by' => $admin->id]);
+
+        $this->actingAs($admin)
+            ->post(route('portfolio.images.store', $item), ['images' => [
+                UploadedFile::fake()->image('a.png'),
+                UploadedFile::fake()->image('b.png'),
+            ]])
+            ->assertRedirect();
+
+        $this->assertSame(2, $item->images()->count());
+        Storage::disk('public')->assertExists($item->images()->first()->image_path);
+    }
+
+    public function test_admin_can_delete_an_automation_image(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+        $item = PortfolioItem::create(['type' => 'automation', 'title' => 'Flow', 'is_active' => true, 'uploaded_by' => $admin->id]);
+        $img = $item->images()->create(['image_path' => UploadedFile::fake()->image('a.png')->store('portfolio', 'public')]);
+
+        $this->actingAs($admin)
+            ->delete(route('portfolio.images.destroy', $img))
+            ->assertRedirect();
+
+        $this->assertSame(0, $item->images()->count());
+    }
+
+    public function test_salesperson_cannot_add_images(): void
+    {
+        $admin = $this->admin();
+        $sales = User::factory()->create(['role' => User::ROLE_SALESPERSON]);
+        $item = PortfolioItem::create(['type' => 'automation', 'title' => 'Flow', 'is_active' => true, 'uploaded_by' => $admin->id]);
+
+        $this->actingAs($sales)
+            ->post(route('portfolio.images.store', $item), ['images' => [UploadedFile::fake()->image('a.png')]])
+            ->assertForbidden();
+    }
+
     public function test_salesperson_cannot_manage_portfolio(): void
     {
         $sales = User::factory()->create(['role' => User::ROLE_SALESPERSON]);

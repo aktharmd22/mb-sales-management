@@ -31,6 +31,12 @@ class PortfolioItem extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
+    /** Many images — used by Automations (one automation, many screenshots). */
+    public function images(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PortfolioImage::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function scopeType($query, string $type)
     {
         return $query->where('type', $type);

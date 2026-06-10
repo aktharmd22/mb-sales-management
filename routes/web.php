@@ -69,6 +69,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');
         Route::put('portfolio/{item}', [PortfolioController::class, 'update'])->name('portfolio.update');
         Route::delete('portfolio/{item}', [PortfolioController::class, 'destroy'])->name('portfolio.destroy');
+        Route::post('portfolio/{item}/images', [PortfolioController::class, 'addImages'])->name('portfolio.images.store');
+        Route::delete('portfolio/images/{image}', [PortfolioController::class, 'destroyImage'])->name('portfolio.images.destroy');
     });
 });
 

@@ -68,9 +68,52 @@ class PortfolioController extends Controller
         if ($item->image_path) {
             Storage::disk('public')->delete($item->image_path);
         }
+        // Remove gallery image files too (DB rows cascade automatically).
+        foreach ($item->images as $img) {
+            Storage::disk('public')->delete($img->image_path);
+        }
         $item->delete();
 
         return redirect()->route('portfolio.index', ['tab' => $type])->with('flash', 'Item removed.');
+    }
+
+    /** Add one or more images to an item (used by Automations). */
+    public function addImages(Request $request, PortfolioItem $item): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $request->validate([
+            'images' => ['required', 'array', 'min:1'],
+            'images.*' => ['image', 'max:8192'], // 8 MB each
+        ], [
+            'images.required' => 'Choose at least one image.',
+            'images.*.image' => 'Every file must be an image.',
+            'images.*.max' => 'Each image must be 8 MB or smaller.',
+        ]);
+
+        $start = (int) $item->images()->max('sort_order');
+        foreach ($request->file('images') as $i => $file) {
+            $item->images()->create([
+                'image_path' => $file->store('portfolio', 'public'),
+                'sort_order' => $start + $i + 1,
+            ]);
+        }
+
+        return redirect()->route('portfolio.index', ['tab' => $item->type, 'open' => $item->id])
+            ->with('flash', 'Images added.');
+    }
+
+    /** Remove a single image from an item. */
+    public function destroyImage(Request $request, \App\Models\PortfolioImage $image): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $item = $image->item;
+        Storage::disk('public')->delete($image->image_path);
+        $image->delete();
+
+        return redirect()->route('portfolio.index', ['tab' => $item->type, 'open' => $item->id])
+            ->with('flash', 'Image removed.');
     }
 
     private function validateItem(Request $request, ?PortfolioItem $item): array
@@ -79,9 +122,9 @@ class PortfolioController extends Controller
         $hasExistingImage = $item && $item->image_path;
         $urlProvided = filled($request->input('url'));
 
-        // Automations need an image. Graphics need an image OR an Instagram URL.
+        // Graphics need an image OR an Instagram URL. Automations hold multiple
+        // images added afterwards, so they need none at creation.
         $imageRequired = match ($type) {
-            'automation' => ! $hasExistingImage,
             'graphic' => ! $hasExistingImage && ! $urlProvided,
             default => false,
         };
