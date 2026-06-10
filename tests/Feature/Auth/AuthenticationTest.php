@@ -37,6 +37,23 @@ class AuthenticationTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    public function test_salesperson_login_ignores_admin_intended_url(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_SALESPERSON]);
+
+        // Simulate an admin-only page having been the "intended" URL.
+        session()->put('url.intended', route('team.index'));
+
+        Volt::test('pages.auth.login')
+            ->set('form.email', $user->email)
+            ->set('form.password', 'password')
+            ->call('login')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();

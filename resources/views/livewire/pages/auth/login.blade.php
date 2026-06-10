@@ -20,7 +20,15 @@ new #[Layout('layouts.guest')] class extends Component
 
         Session::regenerate();
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        // Admins can reach any page, so honour the intended URL. Salespeople
+        // must never be sent to an admin-only "intended" URL (that 403s), so
+        // they always land on their dashboard.
+        if (auth()->user()?->isAdmin()) {
+            $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        } else {
+            Session::forget('url.intended');
+            $this->redirect(route('dashboard'), navigate: true);
+        }
     }
 }; ?>
 
