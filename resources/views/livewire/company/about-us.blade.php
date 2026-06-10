@@ -72,7 +72,7 @@
                                 <x-icon name="external" class="w-4 h-4" /> <span class="hidden sm:inline">Full view</span>
                             </button>
                             <a href="{{ route('about.view', $selected) }}" target="_blank" class="btn-ghost text-sm" title="Open in new tab">
-                                <x-icon name="visit" class="w-4 h-4" /> <span class="hidden sm:inline">Open</span>
+                                <x-icon name="eye" class="w-4 h-4" /> <span class="hidden sm:inline">Open</span>
                             </a>
                             <a href="{{ route('about.download', $selected) }}" class="btn-primary text-sm" title="Download">
                                 <x-icon name="download" class="w-4 h-4" /> <span class="hidden sm:inline">Download</span>

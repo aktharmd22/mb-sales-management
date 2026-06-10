@@ -79,7 +79,10 @@
                                                     <div class="flex items-center justify-between gap-2 rounded-lg bg-canvas px-2.5 py-1.5">
                                                         <span class="truncate font-mono" x-text="show ? @js($cred['password']) : '••••••••'"></span>
                                                         <span class="flex items-center gap-1 shrink-0">
-                                                            <button type="button" @click="show = !show" class="text-ink-700/40 hover:text-ink-900"><x-icon name="visit" class="w-4 h-4" /></button>
+                                                            <button type="button" @click="show = !show" class="text-ink-700/40 hover:text-ink-900" title="Show / hide">
+                                                                <x-icon name="eye" class="w-4 h-4" x-show="!show" />
+                                                                <x-icon name="eye-off" class="w-4 h-4" x-show="show" x-cloak />
+                                                            </button>
                                                             <button type="button" @click="navigator.clipboard.writeText(@js($cred['password'])); $dispatch('toast', {message:'Password copied', type:'info'})" class="text-ink-700/40 hover:text-primary"><x-icon name="copy" class="w-4 h-4" /></button>
                                                         </span>
                                                     </div>
