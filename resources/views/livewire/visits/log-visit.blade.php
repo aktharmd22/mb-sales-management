@@ -174,9 +174,17 @@
         {{-- ============ Sticky save bar ============ --}}
         <div class="fixed bottom-16 lg:bottom-0 inset-x-0 z-30 bg-surface/90 backdrop-blur border-t border-ink-100 px-4 sm:px-6 lg:pl-72 py-3">
             <div class="max-w-2xl mx-auto flex items-center gap-3">
-                <a href="{{ url()->previous() }}" class="btn-ghost">Cancel</a>
-                <button type="submit" class="btn-primary flex-1" wire:loading.attr="disabled" wire:target="save" @disabled(! $clientId)>
-                    <span wire:loading.remove wire:target="save"><x-icon name="check" class="w-4 h-4" /> Save visit</span>
+                <a href="{{ url()->previous() }}" class="btn-ghost h-12 px-5">Cancel</a>
+                <button type="submit" @disabled(! $clientId) wire:loading.attr="disabled" wire:target="save"
+                        class="flex-1 inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-primary text-white text-sm font-semibold shadow-sm hover:bg-primary-600 transition active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed">
+                    {{-- spinner while saving --}}
+                    <svg wire:loading wire:target="save" class="w-[18px] h-[18px] animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                        <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    {{-- check icon (inline, sits beside the label) --}}
+                    <x-icon name="check" class="w-[18px] h-[18px] shrink-0" wire:loading.remove wire:target="save" />
+                    <span wire:loading.remove wire:target="save">Save visit</span>
                     <span wire:loading wire:target="save">Saving…</span>
                 </button>
             </div>
