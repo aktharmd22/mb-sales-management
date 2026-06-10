@@ -112,6 +112,20 @@ class Index extends Component
             type: $user->is_active ? 'success' : 'info');
     }
 
+    public function delete(int $id): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $user = User::where('role', User::ROLE_SALESPERSON)->findOrFail($id);
+        $name = $user->name;
+
+        // Their clients (and those clients' visits/follow-ups/deals), visits,
+        // follow-ups, targets and deals cascade via foreign keys.
+        $user->delete();
+
+        $this->dispatch('toast', message: "{$name} deleted.", type: 'success');
+    }
+
     public function render()
     {
         $salespeople = User::where('role', User::ROLE_SALESPERSON)

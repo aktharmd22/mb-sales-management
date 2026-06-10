@@ -52,6 +52,11 @@
                             <p class="text-[11px] text-ink-700/60">Open tasks</p>
                         </div>
                     </div>
+                    @php
+                        $confirm = $person->clients_count > 0
+                            ? "Delete {$person->name}? This will also permanently delete their {$person->clients_count} client(s) and all related visits & follow-ups. This can't be undone."
+                            : "Delete {$person->name}? This can't be undone.";
+                    @endphp
                     <div class="flex items-center gap-2 mt-4">
                         <button wire:click="edit({{ $person->id }})" class="btn-ghost flex-1 text-sm">
                             <x-icon name="edit" class="w-4 h-4" /> Edit
@@ -59,6 +64,10 @@
                         <button wire:click="toggleActive({{ $person->id }})"
                                 class="btn flex-1 text-sm {{ $person->is_active ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary' }}">
                             {{ $person->is_active ? 'Deactivate' : 'Activate' }}
+                        </button>
+                        <button wire:click="delete({{ $person->id }})" wire:confirm="{{ $confirm }}"
+                                class="btn bg-danger/10 text-danger text-sm px-3" title="Delete">
+                            <x-icon name="trash" class="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -102,6 +111,11 @@
                                 @endif
                             </td>
                             <td class="px-5 py-3.5">
+                                @php
+                                    $confirm = $person->clients_count > 0
+                                        ? "Delete {$person->name}? This will also permanently delete their {$person->clients_count} client(s) and all related visits & follow-ups. This can't be undone."
+                                        : "Delete {$person->name}? This can't be undone.";
+                                @endphp
                                 <div class="flex items-center justify-end gap-1.5">
                                     <button wire:click="edit({{ $person->id }})"
                                             class="grid place-items-center h-9 w-9 rounded-lg text-ink-700 hover:bg-ink-50" title="Edit">
@@ -110,6 +124,10 @@
                                     <button wire:click="toggleActive({{ $person->id }})"
                                             class="text-xs font-semibold px-3 py-2 rounded-lg {{ $person->is_active ? 'text-danger hover:bg-danger/10' : 'text-primary hover:bg-primary/10' }}">
                                         {{ $person->is_active ? 'Deactivate' : 'Activate' }}
+                                    </button>
+                                    <button wire:click="delete({{ $person->id }})" wire:confirm="{{ $confirm }}"
+                                            class="grid place-items-center h-9 w-9 rounded-lg text-ink-700/60 hover:bg-danger/10 hover:text-danger" title="Delete">
+                                        <x-icon name="trash" class="w-4 h-4" />
                                     </button>
                                 </div>
                             </td>
