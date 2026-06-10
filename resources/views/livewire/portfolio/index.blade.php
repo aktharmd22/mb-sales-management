@@ -230,8 +230,10 @@
                                     @error('images') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                                     @error('images.*') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                                 </div>
-                                <button type="submit" class="btn-primary" :disabled="submitting">
-                                    <span x-show="!submitting"><x-icon name="upload" class="w-4 h-4" /> Upload</span>
+                                <button type="submit" :disabled="submitting"
+                                        class="shrink-0 inline-flex flex-col items-center justify-center gap-1 rounded-xl bg-primary text-white px-6 py-2.5 text-sm font-semibold leading-none shadow-sm hover:bg-primary-600 transition active:scale-[0.98] disabled:opacity-70">
+                                    <x-icon name="upload" class="w-5 h-5" />
+                                    <span x-show="!submitting">Upload</span>
                                     <span x-show="submitting" x-cloak>Uploading…</span>
                                 </button>
                             </form>
