@@ -76,12 +76,13 @@ new #[Layout('layouts.guest')] class extends Component
 
         {{-- Submit --}}
         <button type="submit" wire:loading.attr="disabled" wire:target="login"
-                class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition active:scale-[0.99] disabled:opacity-70">
-            <span wire:loading.remove wire:target="login">Log in</span>
-            <span wire:loading wire:target="login" class="inline-flex items-center gap-2">
-                <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                Signing in…
-            </span>
+                class="w-full flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 h-12 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition active:scale-[0.99] disabled:opacity-90 disabled:cursor-wait">
+            <svg wire:loading wire:target="login" class="w-[18px] h-[18px] animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span wire:loading.remove wire:target="login">Sign in</span>
+            <span wire:loading wire:target="login">Signing in…</span>
         </button>
     </form>
 </div>
