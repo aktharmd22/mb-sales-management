@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PortfolioItem;
+use App\Support\LinkPreview;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -30,6 +31,11 @@ class PortfolioController extends Controller
             $item->image_path = $request->file('image')->store('portfolio', 'public');
         }
 
+        // Articles: fetch the link's preview (og:image) as a thumbnail fallback.
+        if ($type === 'article') {
+            $item->preview_image = LinkPreview::image($item->url);
+        }
+
         $item->save();
 
         return redirect()->route('portfolio.index', ['tab' => $type])->with('flash', PortfolioItem::label($type) . ' item added.');
@@ -41,6 +47,7 @@ class PortfolioController extends Controller
 
         $data = $this->validateItem($request, $item);
 
+        $oldUrl = $item->url;
         $item->title = $data['title'];
         $item->description = $data['description'] ?? null;
         $item->url = $data['url'] ?? null;
@@ -53,6 +60,11 @@ class PortfolioController extends Controller
                 Storage::disk('public')->delete($item->image_path);
             }
             $item->image_path = $request->file('image')->store('portfolio', 'public');
+        }
+
+        // Re-fetch the article preview if the link changed (or none stored yet).
+        if ($item->type === 'article' && ($item->url !== $oldUrl || ! $item->preview_image)) {
+            $item->preview_image = LinkPreview::image($item->url);
         }
 
         $item->save();

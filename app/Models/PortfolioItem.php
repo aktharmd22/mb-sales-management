@@ -18,7 +18,7 @@ class PortfolioItem extends Model
     ];
 
     protected $fillable = [
-        'type', 'title', 'description', 'url', 'image_path',
+        'type', 'title', 'description', 'url', 'image_path', 'preview_image',
         'credentials', 'is_active', 'sort_order', 'uploaded_by',
     ];
 
@@ -58,6 +58,12 @@ class PortfolioItem extends Model
         // Root-relative so it works on any host/port (localhost:8000, Apache, a domain)
         // regardless of APP_URL.
         return $this->image_path ? '/storage/' . ltrim($this->image_path, '/') : null;
+    }
+
+    /** Thumbnail for an item — an uploaded image wins, else the fetched link preview. */
+    public function thumbnail(): ?string
+    {
+        return $this->imageUrl() ?: $this->preview_image;
     }
 
     /** A graphic shows its uploaded image if present, otherwise the embedded Instagram post. */

@@ -282,24 +282,37 @@
             @endif
         @endif
 
-        {{-- ===================== ARTICLES (external links) ===================== --}}
+        {{-- ===================== ARTICLES (external links with preview) ===================== --}}
         @if ($tab === 'article')
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($items as $item)
-                    <div class="card p-5 flex flex-col {{ ! $item->is_active ? 'opacity-60' : '' }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="grid place-items-center h-10 w-10 rounded-xl bg-primary/10 text-primary shrink-0">
-                                <x-icon name="news" class="w-5 h-5" />
-                            </span>
-                            @if ($isAdmin) @include('livewire.portfolio.partials.admin-actions', ['item' => $item]) @endif
-                        </div>
-                        <h3 class="font-semibold text-ink-900 mt-3">{{ $item->title }}</h3>
-                        @if ($item->description)<p class="text-sm text-ink-700/70 mt-1 line-clamp-3 flex-1">{{ $item->description }}</p>@else<div class="flex-1"></div>@endif
-                        <a href="{{ $item->url }}" target="_blank" rel="noopener"
-                           class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-600 mt-4">
-                            Read article <x-icon name="external" class="w-4 h-4" />
+                    <div class="card overflow-hidden flex flex-col group {{ ! $item->is_active ? 'opacity-60' : '' }}">
+                        {{-- Thumbnail (uploaded image or fetched link preview) --}}
+                        <a href="{{ $item->url }}" target="_blank" rel="noopener" class="relative block aspect-[16/9] bg-ink-50 overflow-hidden">
+                            @if ($item->thumbnail())
+                                <img src="{{ $item->thumbnail() }}" alt="{{ $item->title }}" loading="lazy" referrerpolicy="no-referrer"
+                                     class="w-full h-full object-cover group-hover:scale-[1.03] transition"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+                                <span class="hidden absolute inset-0 place-items-center text-ink-700/30"><x-icon name="news" class="w-10 h-10" /></span>
+                            @else
+                                <span class="grid place-items-center h-full text-ink-700/30"><x-icon name="news" class="w-10 h-10" /></span>
+                            @endif
                         </a>
-                        @if ($isAdmin && ! $item->is_active)<span class="badge bg-ink-100 text-ink-700 mt-3 self-start">Hidden</span>@endif
+
+                        <div class="p-4 flex flex-col flex-1">
+                            <div class="flex items-start justify-between gap-3">
+                                <h3 class="font-semibold text-ink-900 line-clamp-2">{{ $item->title }}</h3>
+                                @if ($isAdmin) @include('livewire.portfolio.partials.admin-actions', ['item' => $item]) @endif
+                            </div>
+                            @if ($item->description)<p class="text-sm text-ink-700/70 mt-1 line-clamp-2 flex-1">{{ $item->description }}</p>@else<div class="flex-1"></div>@endif
+                            <div class="flex items-center justify-between gap-2 mt-3">
+                                <a href="{{ $item->url }}" target="_blank" rel="noopener"
+                                   class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-600">
+                                    Read article <x-icon name="external" class="w-4 h-4" />
+                                </a>
+                                @if ($isAdmin && ! $item->is_active)<span class="badge bg-ink-100 text-ink-700">Hidden</span>@endif
+                            </div>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -350,10 +363,15 @@
                                 </div>
                             @endif
 
-                            @if ($ft === 'graphic')
+                            @if (in_array($ft, ['graphic', 'article']))
                                 <div>
-                                    <label class="label">Image
-                                        <span class="text-ink-700/40">{{ $eid ? '(leave empty to keep current)' : '— or paste an Instagram link above' }}</span>
+                                    <label class="label">
+                                        {{ $ft === 'article' ? 'Thumbnail' : 'Image' }}
+                                        @if ($ft === 'article')
+                                            <span class="text-ink-700/40">{{ $eid ? '(leave empty to keep current)' : '(optional — auto-fetched from the link if left blank)' }}</span>
+                                        @else
+                                            <span class="text-ink-700/40">{{ $eid ? '(leave empty to keep current)' : '— or paste an Instagram link above' }}</span>
+                                        @endif
                                     </label>
                                     <input type="file" name="image" accept="image/*"
                                            class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />

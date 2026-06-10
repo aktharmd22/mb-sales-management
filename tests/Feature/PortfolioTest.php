@@ -48,8 +48,12 @@ class PortfolioTest extends TestCase
         $this->assertSame('Admin', $item->credentials[0]['label']);
     }
 
-    public function test_admin_can_add_an_article_link(): void
+    public function test_admin_can_add_an_article_link_with_fetched_preview(): void
     {
+        \Illuminate\Support\Facades\Http::fake([
+            '*' => \Illuminate\Support\Facades\Http::response('<html><head><meta property="og:image" content="https://cdn.example.com/cover.jpg"></head></html>', 200),
+        ]);
+
         $this->actingAs($this->admin())
             ->post(route('portfolio.store'), [
                 'type' => 'article',
@@ -59,11 +63,17 @@ class PortfolioTest extends TestCase
             ->assertRedirect(route('portfolio.index', ['tab' => 'article']))
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('portfolio_items', ['type' => 'article', 'title' => 'How we 3x-ed bookings']);
+        $this->assertDatabaseHas('portfolio_items', [
+            'type' => 'article',
+            'title' => 'How we 3x-ed bookings',
+            'preview_image' => 'https://cdn.example.com/cover.jpg',
+        ]);
     }
 
     public function test_article_requires_a_url(): void
     {
+        \Illuminate\Support\Facades\Http::fake();
+
         $this->actingAs($this->admin())
             ->post(route('portfolio.store'), ['type' => 'article', 'title' => 'No link'])
             ->assertSessionHasErrors('url');
