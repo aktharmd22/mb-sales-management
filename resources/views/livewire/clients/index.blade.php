@@ -70,7 +70,7 @@
             </x-slot:action>
         </x-empty-state>
     @else
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             @foreach ($clients as $client)
                 <div wire:key="client-{{ $client->id }}"
                      class="card p-4 relative group hover:shadow-card-hover transition">

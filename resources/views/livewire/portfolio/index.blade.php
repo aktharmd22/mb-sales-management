@@ -37,7 +37,7 @@
     @else
         {{-- ===================== WEBSITES & SOFTWARE ===================== --}}
         @if ($tab === 'website')
-            <div class="grid gap-4 lg:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 @foreach ($items as $item)
                     <div class="card p-5 {{ ! $item->is_active ? 'opacity-60' : '' }}">
                         <div class="flex items-start justify-between gap-3">
@@ -61,7 +61,7 @@
                                     @foreach ($item->credentials as $cred)
                                         <div class="p-3" x-data="{ show: false }">
                                             @if (! empty($cred['label']))<p class="text-xs font-semibold text-primary mb-1.5">{{ $cred['label'] }}</p>@endif
-                                            <div class="grid sm:grid-cols-2 gap-2 text-sm">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                                 @if (! empty($cred['username']))
                                                     <div class="flex items-center justify-between gap-2 rounded-lg bg-canvas px-2.5 py-1.5">
                                                         <span class="truncate"><span class="text-ink-700/50">User:</span> {{ $cred['username'] }}</span>
@@ -97,7 +97,7 @@
 
         {{-- ===================== VIDEO ADS ===================== --}}
         @if ($tab === 'video')
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($items as $item)
                     <div class="card overflow-hidden {{ ! $item->is_active ? 'opacity-60' : '' }}">
                         @if ($item->instagramEmbedUrl())
@@ -127,7 +127,7 @@
         {{-- ===================== GRAPHICS (single image or Instagram) ===================== --}}
         @if ($tab === 'graphic')
             <div x-data="{ lb: null }">
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($items as $item)
                         <div class="card overflow-hidden group {{ ! $item->is_active ? 'opacity-60' : '' }}">
                             @if ($item->imageUrl())
@@ -200,7 +200,7 @@
                     @if ($openItem->images->isEmpty())
                         <div class="card text-center py-14 text-ink-700/50 text-sm">No images yet.{{ $isAdmin ? ' Add some below.' : '' }}</div>
                     @else
-                        <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             @foreach ($openItem->images as $idx => $img)
                                 <div class="relative group card overflow-hidden">
                                     <button type="button" @click="openAt({{ $idx }})" class="block w-full">
@@ -253,7 +253,7 @@
                 </div>
             @else
                 {{-- ===== Automation cards ===== --}}
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($items as $item)
                         @php $cover = $item->images->first(); $count = $item->images->count(); @endphp
                         <button type="button" wire:click="openGallery({{ $item->id }})"
@@ -284,7 +284,7 @@
 
         {{-- ===================== ARTICLES (external links with preview) ===================== --}}
         @if ($tab === 'article')
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($items as $item)
                     <div class="card overflow-hidden flex flex-col group {{ ! $item->is_active ? 'opacity-60' : '' }}">
                         {{-- Thumbnail (uploaded image or fetched link preview) --}}

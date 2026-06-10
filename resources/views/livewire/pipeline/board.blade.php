@@ -17,7 +17,7 @@
     </x-page-header>
 
     @if ($view === 'funnel')
-        <div class="grid lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div class="card p-5 lg:col-span-2">
                 <h2 class="font-bold text-ink-900 mb-2">Clients per stage</h2>
                 <x-chart :options="$funnelChart" :chart-key="'pipe-funnel-'.$chartKeySuffix" />

@@ -20,7 +20,7 @@
             @endif
         </x-empty-state>
     @else
-        <div class="grid lg:grid-cols-[320px,1fr] gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5">
             {{-- Document list --}}
             <div class="space-y-2">
                 @foreach ($documents as $doc)

@@ -117,8 +117,8 @@
         <div class="flex-1 lg:pl-64 flex flex-col min-w-0">
             @include('layouts.partials.topbar')
 
-            <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-10">
-                <div class="mx-auto w-full max-w-7xl">
+            <main class="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-10">
+                <div class="mx-auto w-full min-w-0 max-w-7xl">
                     {{ $slot }}
                 </div>
             </main>

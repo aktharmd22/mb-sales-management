@@ -18,7 +18,7 @@
         </x-empty-state>
     @else
         {{-- Roster: cards on mobile, table on desktop --}}
-        <div class="grid gap-3 sm:hidden">
+        <div class="grid grid-cols-1 gap-3 sm:hidden">
             @foreach ($salespeople as $person)
                 <div class="card p-4 {{ $person->is_active ? '' : 'opacity-60' }}">
                     <div class="flex items-start gap-3">

@@ -7,11 +7,13 @@
 @layer base {
     html {
         -webkit-tap-highlight-color: transparent;
+        overflow-x: hidden;
     }
 
     body {
         @apply bg-canvas text-ink-900 antialiased;
         font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+        overflow-x: hidden; /* belt-and-braces against stray horizontal overflow on mobile */
     }
 
     /* Tabular figures so dashboard digits line up. */

@@ -22,7 +22,7 @@
 
     {{-- ============ Momentum strip (signature hero) ============ --}}
     <div class="card overflow-hidden mb-5">
-        <div class="grid lg:grid-cols-3">
+        <div class="grid grid-cols-1 lg:grid-cols-3">
             {{-- Big headline numbers --}}
             <div class="lg:col-span-2 p-5 sm:p-6 bg-ink-900 text-white">
                 <p class="text-xs uppercase tracking-widest text-white/40">{{ \App\Support\Metrics::periodLabel($period) }} momentum</p>
@@ -96,7 +96,7 @@
     </div>
 
     {{-- ============ Charts ============ --}}
-    <div class="grid lg:grid-cols-3 gap-5 mb-5">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
         <div class="card p-5 lg:col-span-2">
             <div class="flex items-center justify-between mb-2">
                 <h2 class="font-bold text-ink-900">Visits over time</h2>
@@ -124,7 +124,7 @@
 
     {{-- ============ Role-specific lower section ============ --}}
     @if ($isAdmin)
-        <div class="grid lg:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {{-- Leaderboard --}}
             <div class="card p-5">
                 <div class="flex items-center justify-between mb-3">

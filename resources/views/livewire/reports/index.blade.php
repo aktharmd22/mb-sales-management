@@ -27,14 +27,14 @@
     </div>
 
     {{-- Potential vs actual --}}
-    <div class="grid sm:grid-cols-3 gap-3 mb-5">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <x-kpi label="Revenue potential (period)" :value="rm($kpis['revenue_potential'])" icon="cash" tone="primary" />
         <x-kpi label="Closed won (actual)" :value="rm($deals['won_revenue'])" icon="handshake" tone="won" sub="{{ $deals['won'] }} deals won" />
         <x-kpi label="Deals lost" :value="number_format($deals['lost'])" icon="arrow-down" tone="danger" />
     </div>
 
     {{-- Charts --}}
-    <div class="grid lg:grid-cols-2 gap-5 mb-5">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         <div class="card p-5">
             <h2 class="font-bold text-ink-900 mb-2">Visits over time</h2>
             <x-chart :options="$visitsChart" :chart-key="'rep-visits-'.$chartKeySuffix" />
