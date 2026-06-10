@@ -169,32 +169,115 @@
 
         {{-- ===================== AUTOMATIONS (one automation → many images) ===================== --}}
         @if ($tab === 'automation')
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach ($items as $item)
-                    @php $cover = $item->images->first(); $count = $item->images->count(); @endphp
-                    <button type="button" wire:click="openGallery({{ $item->id }})"
-                            class="card overflow-hidden group text-left hover:shadow-card-hover transition {{ ! $item->is_active ? 'opacity-60' : '' }}">
-                        <div class="relative aspect-[4/3] bg-ink-50 overflow-hidden">
-                            @if ($cover)
-                                <img src="{{ $cover->imageUrl() }}" alt="{{ $item->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.03] transition" />
-                            @else
-                                <div class="grid place-items-center h-full text-ink-700/30"><x-icon name="bolt" class="w-10 h-10" /></div>
-                            @endif
-                            <span class="absolute bottom-2 right-2 badge bg-ink-900/75 text-white">
-                                <x-icon name="image" class="w-3 h-3" /> {{ $count }}
-                            </span>
-                        </div>
-                        <div class="p-4 flex items-start justify-between gap-3">
+            @if ($openItem)
+                {{-- ===== Full-page gallery for one automation ===== --}}
+                <div x-data="{
+                        images: @js($openItem->images->map->imageUrl()->values()),
+                        lb: false,
+                        i: 0,
+                        openAt(n) { this.i = n; this.lb = true; },
+                        next() { if (this.images.length) this.i = (this.i + 1) % this.images.length; },
+                        prev() { if (this.images.length) this.i = (this.i - 1 + this.images.length) % this.images.length; },
+                     }">
+                    {{-- Header --}}
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <button wire:click="closeGallery" class="btn-ghost shrink-0"><x-icon name="chevron-right" class="w-4 h-4 rotate-180" /> Back</button>
                             <div class="min-w-0">
-                                <h3 class="font-semibold text-ink-900 truncate">{{ $item->title }}</h3>
-                                @if ($item->description)<p class="text-sm text-ink-700/70 mt-0.5 line-clamp-2">{{ $item->description }}</p>@endif
-                                @if ($isAdmin && ! $item->is_active)<span class="badge bg-ink-100 text-ink-700 mt-1.5">Hidden</span>@endif
+                                <h2 class="text-xl font-bold text-ink-900 truncate">{{ $openItem->title }}</h2>
+                                <p class="text-sm text-ink-700/60">{{ $openItem->images->count() }} {{ Str::plural('image', $openItem->images->count()) }}@if ($openItem->description) · {{ $openItem->description }}@endif</p>
                             </div>
-                            <span class="text-primary text-sm font-medium shrink-0 mt-0.5">Open →</span>
                         </div>
-                    </button>
-                @endforeach
-            </div>
+                        @if ($isAdmin)
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button wire:click="startEdit({{ $openItem->id }})" class="btn-ghost text-sm"><x-icon name="edit" class="w-4 h-4" /> Rename</button>
+                                <button wire:click="delete({{ $openItem->id }})" wire:confirm="Delete this automation and all its images?" class="btn text-sm bg-danger/10 text-danger"><x-icon name="trash" class="w-4 h-4" /> Delete</button>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- 2-per-row full images --}}
+                    @if ($openItem->images->isEmpty())
+                        <div class="card text-center py-14 text-ink-700/50 text-sm">No images yet.{{ $isAdmin ? ' Add some below.' : '' }}</div>
+                    @else
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            @foreach ($openItem->images as $idx => $img)
+                                <div class="relative group card overflow-hidden">
+                                    <button type="button" @click="openAt({{ $idx }})" class="block w-full">
+                                        <img src="{{ $img->imageUrl() }}" alt="" loading="lazy" class="w-full h-auto object-contain bg-ink-50" />
+                                    </button>
+                                    @if ($isAdmin)
+                                        <form method="POST" action="{{ route('portfolio.images.destroy', $img) }}" class="absolute top-2 right-2" onsubmit="return confirm('Remove this image?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="grid place-items-center h-9 w-9 rounded-lg bg-ink-950/60 text-white opacity-0 group-hover:opacity-100 hover:bg-danger transition"><x-icon name="trash" class="w-4 h-4" /></button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{-- Admin: add images --}}
+                    @if ($isAdmin)
+                        <div class="card p-5 mt-4">
+                            <form method="POST" action="{{ route('portfolio.images.store', $openItem) }}" enctype="multipart/form-data"
+                                  x-data="{ submitting: false }" @submit="submitting = true" class="flex flex-col sm:flex-row sm:items-end gap-3">
+                                @csrf
+                                <div class="flex-1">
+                                    <label class="label">Add images <span class="text-ink-700/40">(select one or many — max 8 MB each)</span></label>
+                                    <input type="file" name="images[]" accept="image/*" multiple required
+                                           class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />
+                                    @error('images') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                                    @error('images.*') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                                </div>
+                                <button type="submit" class="btn-primary" :disabled="submitting">
+                                    <span x-show="!submitting"><x-icon name="upload" class="w-4 h-4" /> Upload</span>
+                                    <span x-show="submitting" x-cloak>Uploading…</span>
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+
+                    {{-- Lightbox with prev / next --}}
+                    <div x-show="lb" x-cloak
+                         @keydown.escape.window="lb = false" @keydown.arrow-right.window="next()" @keydown.arrow-left.window="prev()"
+                         class="fixed inset-0 z-[70] bg-ink-950/90 backdrop-blur flex items-center justify-center p-4 sm:p-10" style="display:none;">
+                        <button @click="lb = false" class="absolute top-4 right-4 text-white/70 hover:text-white"><x-icon name="close" class="w-7 h-7" /></button>
+                        <button @click="prev()" x-show="images.length > 1" class="absolute left-3 sm:left-6 grid place-items-center h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20"><x-icon name="chevron-right" class="w-6 h-6 rotate-180" /></button>
+                        <img :src="images[i]" class="max-w-full max-h-[85vh] rounded-xl shadow-pop" alt="preview" />
+                        <button @click="next()" x-show="images.length > 1" class="absolute right-3 sm:right-6 grid place-items-center h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20"><x-icon name="chevron-right" class="w-6 h-6" /></button>
+                        <div class="absolute bottom-5 left-1/2 -translate-x-1/2 text-sm text-white/70 tnum" x-text="(i + 1) + ' / ' + images.length"></div>
+                    </div>
+                </div>
+            @else
+                {{-- ===== Automation cards ===== --}}
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach ($items as $item)
+                        @php $cover = $item->images->first(); $count = $item->images->count(); @endphp
+                        <button type="button" wire:click="openGallery({{ $item->id }})"
+                                class="card overflow-hidden group text-left hover:shadow-card-hover transition {{ ! $item->is_active ? 'opacity-60' : '' }}">
+                            <div class="relative aspect-[4/3] bg-ink-50 overflow-hidden">
+                                @if ($cover)
+                                    <img src="{{ $cover->imageUrl() }}" alt="{{ $item->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.03] transition" />
+                                @else
+                                    <div class="grid place-items-center h-full text-ink-700/30"><x-icon name="bolt" class="w-10 h-10" /></div>
+                                @endif
+                                <span class="absolute bottom-2 right-2 badge bg-ink-900/75 text-white">
+                                    <x-icon name="image" class="w-3 h-3" /> {{ $count }}
+                                </span>
+                            </div>
+                            <div class="p-4 flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="font-semibold text-ink-900 truncate">{{ $item->title }}</h3>
+                                    @if ($item->description)<p class="text-sm text-ink-700/70 mt-0.5 line-clamp-2">{{ $item->description }}</p>@endif
+                                    @if ($isAdmin && ! $item->is_active)<span class="badge bg-ink-100 text-ink-700 mt-1.5">Hidden</span>@endif
+                                </div>
+                                <span class="text-primary text-sm font-medium shrink-0 mt-0.5">Open →</span>
+                            </div>
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         @endif
     @endif
 
@@ -299,83 +382,4 @@
         </div>
     @endif
 
-    {{-- ===================== Automation gallery (server-rendered, opens via ?open=) ===================== --}}
-    @if ($openItem)
-        <div class="fixed inset-0 z-[55] overflow-y-auto" x-data="{ lb: null }">
-            <div class="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" wire:click="closeGallery"></div>
-            <div class="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
-                <div class="relative w-full max-w-3xl bg-surface rounded-t-3xl sm:rounded-2xl shadow-pop max-h-[90vh] flex flex-col">
-
-                    {{-- Header --}}
-                    <div class="flex items-start justify-between gap-3 p-5 border-b border-ink-100">
-                        <div class="min-w-0">
-                            <h2 class="text-lg font-bold text-ink-900 truncate">{{ $openItem->title }}</h2>
-                            @if ($openItem->description)<p class="text-sm text-ink-700/60 mt-0.5">{{ $openItem->description }}</p>@endif
-                            <p class="text-xs text-ink-700/50 mt-1">{{ $openItem->images->count() }} {{ Str::plural('image', $openItem->images->count()) }}</p>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            @if ($isAdmin)
-                                <button type="button" wire:click="startEdit({{ $openItem->id }})"
-                                        class="grid place-items-center h-9 w-9 rounded-lg text-ink-700/60 hover:bg-ink-50" title="Rename"><x-icon name="edit" class="w-4 h-4" /></button>
-                                <button type="button" wire:click="delete({{ $openItem->id }})" wire:confirm="Delete this automation and all its images?"
-                                        class="grid place-items-center h-9 w-9 rounded-lg text-ink-700/60 hover:bg-danger/10 hover:text-danger" title="Delete"><x-icon name="trash" class="w-4 h-4" /></button>
-                            @endif
-                            <button type="button" wire:click="closeGallery" class="grid place-items-center h-9 w-9 rounded-lg text-ink-700/60 hover:bg-ink-50" title="Close"><x-icon name="close" class="w-5 h-5" /></button>
-                        </div>
-                    </div>
-
-                    {{-- Images --}}
-                    <div class="p-5 overflow-y-auto">
-                        @if ($openItem->images->isEmpty())
-                            <div class="text-center py-10 text-ink-700/50 text-sm">No images yet.{{ $isAdmin ? ' Add some below.' : '' }}</div>
-                        @else
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                @foreach ($openItem->images as $img)
-                                    <div class="relative group rounded-xl overflow-hidden bg-ink-50 aspect-square">
-                                        <button type="button" @click="lb = @js($img->imageUrl())" class="block w-full h-full">
-                                            <img src="{{ $img->imageUrl() }}" alt="" loading="lazy" class="w-full h-full object-cover" />
-                                        </button>
-                                        @if ($isAdmin)
-                                            <form method="POST" action="{{ route('portfolio.images.destroy', $img) }}" class="absolute top-1.5 right-1.5" onsubmit="return confirm('Remove this image?')">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="grid place-items-center h-8 w-8 rounded-lg bg-ink-950/60 text-white opacity-0 group-hover:opacity-100 hover:bg-danger transition"><x-icon name="trash" class="w-4 h-4" /></button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Admin: add images (plain POST upload) --}}
-                    @if ($isAdmin)
-                        <div class="p-5 border-t border-ink-100">
-                            <form method="POST" action="{{ route('portfolio.images.store', $openItem) }}" enctype="multipart/form-data"
-                                  x-data="{ submitting: false }" @submit="submitting = true" class="flex flex-col sm:flex-row sm:items-end gap-3">
-                                @csrf
-                                <div class="flex-1">
-                                    <label class="label">Add images <span class="text-ink-700/40">(select one or many — max 8 MB each)</span></label>
-                                    <input type="file" name="images[]" accept="image/*" multiple required
-                                           class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />
-                                    @error('images') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                                    @error('images.*') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                                </div>
-                                <button type="submit" class="btn-primary" :disabled="submitting">
-                                    <span x-show="!submitting"><x-icon name="upload" class="w-4 h-4" /> Upload</span>
-                                    <span x-show="submitting" x-cloak>Uploading…</span>
-                                </button>
-                            </form>
-                        </div>
-                    @endif
-
-                    {{-- Lightbox --}}
-                    <div x-show="lb" x-cloak @click="lb = null" @keydown.escape.window="lb = null"
-                         class="fixed inset-0 z-[70] bg-ink-950/85 backdrop-blur grid place-items-center p-4" style="display:none;">
-                        <img :src="lb" class="max-w-full max-h-[90vh] rounded-xl shadow-pop" alt="preview" />
-                        <button @click.stop="lb = null" class="absolute top-4 right-4 text-white/70 hover:text-white"><x-icon name="close" class="w-7 h-7" /></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 </div>
