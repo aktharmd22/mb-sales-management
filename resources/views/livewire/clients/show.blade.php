@@ -39,6 +39,11 @@
 
             <div class="flex items-center gap-2 shrink-0">
                 <button wire:click="editClient" class="btn-ghost"><x-icon name="edit" class="w-4 h-4" /> Edit</button>
+                <button wire:click="deleteClient"
+                        wire:confirm="Delete “{{ $client->business_name }}” and all its visits & follow-ups? This can't be undone."
+                        class="btn bg-danger/10 text-danger hover:bg-danger hover:text-white" title="Delete client">
+                    <x-icon name="trash" class="w-4 h-4" />
+                </button>
                 <a href="{{ route('visits.create', ['client' => $client->id]) }}" wire:navigate class="btn-primary">
                     <x-icon name="plus" class="w-4 h-4" /> Client Visit
                 </a>

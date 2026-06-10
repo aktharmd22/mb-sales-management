@@ -6,6 +6,7 @@ use App\Exports\ClientsExport;
 use App\Models\Client;
 use App\Models\User;
 use App\Support\Pipeline;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Maatwebsite\Excel\Facades\Excel;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -18,7 +19,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use WithPagination;
+    use AuthorizesRequests, WithPagination;
 
     #[Url(as: 'search', history: true)]
     public string $search = '';
@@ -52,6 +53,23 @@ class Index extends Component
     public function newClient(): void
     {
         $this->dispatch('open-client-form');
+    }
+
+    public function editClient(int $id): void
+    {
+        $this->dispatch('open-client-form', clientId: $id);
+    }
+
+    public function delete(int $id): void
+    {
+        $client = Client::findOrFail($id);
+        $this->authorize('delete', $client);
+
+        $name = $client->business_name;
+        // Visits / follow-ups / deals cascade via FK on delete.
+        $client->delete();
+
+        $this->dispatch('toast', message: "“{$name}” deleted.", type: 'success');
     }
 
     public function export()

@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Livewire\Clients\Form as ClientForm;
+use App\Livewire\Clients\Index as ClientsIndex;
 use App\Livewire\Clients\Show as ClientShow;
 use App\Livewire\Visits\LogVisit;
 use App\Models\Client;
 use App\Models\FollowUp;
 use App\Models\User;
+use App\Models\Visit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -100,6 +102,33 @@ class ClientVisitFlowTest extends TestCase
             'business_name' => 'Brand New Biz',
             'assigned_to' => $this->sales->id,
         ]);
+    }
+
+    public function test_owner_can_delete_client_and_its_visits_cascade(): void
+    {
+        $client = Client::factory()->create(['assigned_to' => $this->sales->id]);
+        $visit = Visit::factory()->create(['client_id' => $client->id, 'user_id' => $this->sales->id]);
+
+        Livewire::actingAs($this->sales)
+            ->test(ClientsIndex::class)
+            ->call('delete', $client->id)
+            ->assertDispatched('toast');
+
+        $this->assertDatabaseMissing('clients', ['id' => $client->id]);
+        $this->assertDatabaseMissing('visits', ['id' => $visit->id]); // FK cascade
+    }
+
+    public function test_salesperson_cannot_delete_another_salespersons_client(): void
+    {
+        $other = User::factory()->create(['role' => User::ROLE_SALESPERSON]);
+        $client = Client::factory()->create(['assigned_to' => $other->id]);
+
+        Livewire::actingAs($this->sales)
+            ->test(ClientsIndex::class)
+            ->call('delete', $client->id)
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('clients', ['id' => $client->id]);
     }
 
     public function test_salesperson_cannot_view_another_salespersons_client(): void

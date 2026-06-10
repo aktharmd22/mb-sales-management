@@ -127,6 +127,17 @@ class Show extends Component
         $this->dispatch('open-client-form', clientId: $this->client->id);
     }
 
+    public function deleteClient()
+    {
+        $this->authorize('delete', $this->client);
+        $name = $this->client->business_name;
+        $this->client->delete();
+
+        session()->flash('flash', "“{$name}” deleted.");
+
+        return $this->redirectRoute('clients.index', navigate: true);
+    }
+
     #[On('client-saved')]
     public function refreshClient(): void
     {
