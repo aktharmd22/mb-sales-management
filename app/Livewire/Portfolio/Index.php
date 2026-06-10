@@ -20,6 +20,15 @@ class Index extends Component
     #[Url(history: true)]
     public ?int $open = null;
 
+    // Add/edit modal (server-driven for reliability).
+    public bool $showForm = false;
+    public string $formType = 'website';
+    public ?int $editId = null;
+    public string $fTitle = '';
+    public string $fDescription = '';
+    public string $fUrl = '';
+    public array $fCredentials = [];
+
     public function mount(): void
     {
         if (! array_key_exists($this->tab, PortfolioItem::TYPES)) {
@@ -30,6 +39,42 @@ class Index extends Component
     public function updatedTab(): void
     {
         $this->open = null;
+        $this->showForm = false;
+    }
+
+    /* ---------------- Add / edit modal ---------------- */
+
+    public function startCreate(?string $type = null): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        $type = array_key_exists($type, PortfolioItem::TYPES) ? $type : $this->tab;
+
+        $this->editId = null;
+        $this->formType = $type;
+        $this->fTitle = '';
+        $this->fDescription = '';
+        $this->fUrl = '';
+        $this->fCredentials = $type === 'website' ? [['label' => '', 'username' => '', 'password' => '', 'url' => '']] : [];
+        $this->showForm = true;
+    }
+
+    public function startEdit(int $id): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        $item = PortfolioItem::findOrFail($id);
+
+        $this->editId = $item->id;
+        $this->formType = $item->type;
+        $this->fTitle = $item->title;
+        $this->fDescription = $item->description ?? '';
+        $this->fUrl = $item->url ?? '';
+        $this->fCredentials = $item->credentials ?? [];
+        $this->showForm = true;
+    }
+
+    public function closeForm(): void
+    {
+        $this->showForm = false;
     }
 
     public function openGallery(int $id): void

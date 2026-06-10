@@ -1,15 +1,8 @@
-<div x-data="portfolioForm({
-        tab: @js($tab),
-        storeUrl: @js(route('portfolio.store')),
-        updateBase: @js(url('portfolio')),
-        hasErrors: @js($errors->any() && $isAdmin),
-        old: @js(['type' => old('type'), 'title' => old('title'), 'description' => old('description'), 'url' => old('url'), 'credentials' => old('credentials', [])]),
-     })">
-
+<div>
     <x-page-header title="Portfolio" subtitle="Show clients the work — websites, video ads, graphics and automations.">
         @if ($isAdmin)
             <x-slot:actions>
-                <button type="button" @click="create(@js($tab))" class="btn-primary">
+                <button type="button" wire:click="startCreate('{{ $tab }}')" class="btn-primary">
                     <x-icon name="plus" class="w-4 h-4" /> Add to this section
                 </button>
             </x-slot:actions>
@@ -37,7 +30,7 @@
             message="{{ $isAdmin ? 'Add your first item so the team can show it to clients.' : 'Your manager hasn\'t added anything to this section yet.' }}">
             @if ($isAdmin)
                 <x-slot:action>
-                    <button type="button" @click="create(@js($tab))" class="btn-primary"><x-icon name="plus" class="w-4 h-4" /> Add item</button>
+                    <button type="button" wire:click="startCreate('{{ $tab }}')" class="btn-primary"><x-icon name="plus" class="w-4 h-4" /> Add item</button>
                 </x-slot:action>
             @endif
         </x-empty-state>
@@ -205,85 +198,98 @@
         @endif
     @endif
 
-    {{-- ===================== Admin add/edit modal ===================== --}}
-    @if ($isAdmin)
-        @php
-            $typeLabels = ['website' => 'Websites & Software', 'video' => 'Video Ads', 'graphic' => 'Graphics', 'automation' => 'Automations'];
-        @endphp
-        <div x-show="open" x-cloak @keydown.escape.window="open = false" class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
-            <div x-show="open" x-transition.opacity class="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" @click="open = false"></div>
+    {{-- ===================== Admin add/edit modal (Livewire-driven visibility) ===================== --}}
+    @php
+        $typeLabels = ['website' => 'Websites & Software', 'video' => 'Video Ads', 'graphic' => 'Graphics', 'automation' => 'Automations'];
+        $urlLabels = ['website' => 'Live site URL', 'video' => 'Instagram reel URL', 'graphic' => 'Instagram link (optional)'];
+        $urlPlaceholders = ['website' => 'https://example.com', 'video' => 'https://www.instagram.com/reel/...', 'graphic' => 'https://www.instagram.com/p/...'];
+        $eid = $editId ?: old('edit_id');
+        $ft = ($errors->any() && old('type')) ? old('type') : $formType;
+        $modalOpen = $showForm || $errors->any();
+    @endphp
+    @if ($isAdmin && $modalOpen && array_key_exists($ft, $typeLabels))
+        <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" wire:click="closeForm"></div>
             <div class="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
-                <div x-show="open" x-transition class="relative w-full max-w-xl bg-surface rounded-t-3xl sm:rounded-2xl shadow-pop">
-                    <form :action="action" method="POST" enctype="multipart/form-data" x-data="{ submitting: false }" @submit="submitting = true" class="p-6 max-h-[88vh] overflow-y-auto">
+                <div wire:key="pform-{{ $eid ?: 'new' }}-{{ $ft }}"
+                     x-data="{ creds: @js(old('credentials', $fCredentials)), submitting: false }"
+                     @keydown.escape.window="$wire.closeForm()"
+                     class="relative w-full max-w-xl bg-surface rounded-t-3xl sm:rounded-2xl shadow-pop animate-fade-in-up">
+                    <form method="POST" enctype="multipart/form-data"
+                          action="{{ $eid ? route('portfolio.update', $eid) : route('portfolio.store') }}"
+                          @submit="submitting = true" class="p-6 max-h-[88vh] overflow-y-auto">
                         @csrf
-                        <template x-if="editId"><input type="hidden" name="_method" value="PUT"></template>
-                        <input type="hidden" name="type" :value="formType">
+                        @if ($eid) @method('PUT') @endif
+                        <input type="hidden" name="edit_id" value="{{ $eid }}">
+                        <input type="hidden" name="type" value="{{ $ft }}">
 
-                        <h2 class="text-lg font-bold text-ink-900" x-text="editId ? 'Edit item' : 'Add to ' + ({{ Illuminate\Support\Js::from($typeLabels) }})[formType]"></h2>
+                        <h2 class="text-lg font-bold text-ink-900">{{ $eid ? 'Edit item' : 'Add to ' . $typeLabels[$ft] }}</h2>
 
                         <div class="mt-5 space-y-4">
                             <div>
                                 <label class="label">Title</label>
-                                <input type="text" name="title" x-model="fields.title" class="input" placeholder="e.g. Acme Corporate Website" required />
+                                <input type="text" name="title" value="{{ old('title', $fTitle) }}" class="input" placeholder="e.g. Acme Corporate Website" required autofocus />
                                 @error('title') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                             </div>
 
-                            {{-- URL (website/video/graphic) --}}
-                            <div x-show="formType !== 'automation'">
-                                <label class="label">
-                                    <span x-text="({website:'Live site URL', video:'Instagram reel URL', graphic:'Instagram link (optional)', automation:''})[formType]"></span>
-                                </label>
-                                <input type="url" name="url" x-model="fields.url" class="input"
-                                       :required="formType === 'website' || formType === 'video'"
-                                       :placeholder="({website:'https://example.com', video:'https://www.instagram.com/reel/...', graphic:'https://www.instagram.com/p/...', automation:''})[formType]" />
-                                @error('url') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                            </div>
+                            @if ($ft !== 'automation')
+                                <div>
+                                    <label class="label">{{ $urlLabels[$ft] ?? 'URL' }}</label>
+                                    <input type="url" name="url" value="{{ old('url', $fUrl) }}" class="input"
+                                           @if (in_array($ft, ['website', 'video'])) required @endif
+                                           placeholder="{{ $urlPlaceholders[$ft] ?? '' }}" />
+                                    @error('url') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                                </div>
+                            @endif
 
-                            {{-- Image (graphics only — automations add images in their gallery) --}}
-                            <div x-show="formType === 'graphic'">
-                                <label class="label">
-                                    Image
-                                    <span class="text-ink-700/40" x-show="editId">(leave empty to keep current)</span>
-                                    <span class="text-ink-700/40" x-show="!editId">— or paste an Instagram link above</span>
-                                </label>
-                                <input type="file" name="image" accept="image/*"
-                                       class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />
-                                @error('image') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                            </div>
-                            <p x-show="formType === 'automation'" class="text-xs text-ink-700/50">After you add the automation, open it to upload its images.</p>
+                            @if ($ft === 'graphic')
+                                <div>
+                                    <label class="label">Image
+                                        <span class="text-ink-700/40">{{ $eid ? '(leave empty to keep current)' : '— or paste an Instagram link above' }}</span>
+                                    </label>
+                                    <input type="file" name="image" accept="image/*"
+                                           class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-100" />
+                                    @error('image') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                                </div>
+                            @endif
+
+                            @if ($ft === 'automation')
+                                <p class="text-xs text-ink-700/50">After you add the automation, open it to upload its images.</p>
+                            @endif
 
                             <div>
                                 <label class="label">Description <span class="text-ink-700/40">(optional)</span></label>
-                                <textarea name="description" x-model="fields.description" rows="2" class="input" placeholder="A short note about this work"></textarea>
+                                <textarea name="description" rows="2" class="input" placeholder="A short note about this work">{{ old('description', $fDescription) }}</textarea>
                             </div>
 
-                            {{-- Credentials (website only) --}}
-                            <div x-show="formType === 'website'">
-                                <div class="flex items-center justify-between">
-                                    <label class="label mb-0">Demo logins <span class="text-ink-700/40">(per user type)</span></label>
-                                    <button type="button" @click="addCred()" class="text-sm font-medium text-primary">+ Add login</button>
-                                </div>
-                                <div class="space-y-2 mt-2">
-                                    <template x-for="(cred, i) in fields.credentials" :key="i">
-                                        <div class="rounded-xl border border-ink-100 p-3 space-y-2 relative">
-                                            <button type="button" @click="removeCred(i)" class="absolute top-2 right-2 text-ink-700/40 hover:text-danger"><x-icon name="close" class="w-4 h-4" /></button>
-                                            <input type="text" :name="'credentials['+i+'][label]'" x-model="cred.label" class="input text-sm" placeholder="User type (e.g. Admin, Manager, Customer)" />
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <input type="text" :name="'credentials['+i+'][username]'" x-model="cred.username" class="input text-sm" placeholder="Username / email" />
-                                                <input type="text" :name="'credentials['+i+'][password]'" x-model="cred.password" class="input text-sm" placeholder="Password" />
+                            @if ($ft === 'website')
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="label mb-0">Demo logins <span class="text-ink-700/40">(per user type)</span></label>
+                                        <button type="button" @click="creds.push({label:'',username:'',password:'',url:''})" class="text-sm font-medium text-primary">+ Add login</button>
+                                    </div>
+                                    <div class="space-y-2 mt-2">
+                                        <template x-for="(cred, i) in creds" :key="i">
+                                            <div class="rounded-xl border border-ink-100 p-3 space-y-2 relative">
+                                                <button type="button" @click="creds.splice(i, 1)" class="absolute top-2 right-2 text-ink-700/40 hover:text-danger"><x-icon name="close" class="w-4 h-4" /></button>
+                                                <input type="text" :name="'credentials['+i+'][label]'" x-model="cred.label" class="input text-sm" placeholder="User type (e.g. Admin, Manager, Customer)" />
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <input type="text" :name="'credentials['+i+'][username]'" x-model="cred.username" class="input text-sm" placeholder="Username / email" />
+                                                    <input type="text" :name="'credentials['+i+'][password]'" x-model="cred.password" class="input text-sm" placeholder="Password" />
+                                                </div>
+                                                <input type="url" :name="'credentials['+i+'][url]'" x-model="cred.url" class="input text-sm" placeholder="Login page URL (optional)" />
                                             </div>
-                                            <input type="url" :name="'credentials['+i+'][url]'" x-model="cred.url" class="input text-sm" placeholder="Login page URL (optional)" />
-                                        </div>
-                                    </template>
-                                    <p x-show="fields.credentials.length === 0" class="text-xs text-ink-700/50">No logins added. Click “Add login” to include demo credentials.</p>
+                                        </template>
+                                        <p x-show="creds.length === 0" class="text-xs text-ink-700/50">No logins added. Click “Add login” to include demo credentials.</p>
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
 
                         <div class="mt-6 flex justify-end gap-2">
-                            <button type="button" @click="open = false" class="btn-ghost">Cancel</button>
+                            <button type="button" wire:click="closeForm" class="btn-ghost">Cancel</button>
                             <button type="submit" class="btn-primary" :disabled="submitting">
-                                <span x-show="!submitting" x-text="editId ? 'Save changes' : 'Add item'"></span>
+                                <span x-show="!submitting">{{ $eid ? 'Save changes' : 'Add item' }}</span>
                                 <span x-show="submitting" x-cloak>Saving…</span>
                             </button>
                         </div>
@@ -309,7 +315,7 @@
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
                             @if ($isAdmin)
-                                <button type="button" @click="edit({{ \Illuminate\Support\Js::from($openItem->only(['id','type','title','description','url','credentials'])) }})"
+                                <button type="button" wire:click="startEdit({{ $openItem->id }})"
                                         class="grid place-items-center h-9 w-9 rounded-lg text-ink-700/60 hover:bg-ink-50" title="Rename"><x-icon name="edit" class="w-4 h-4" /></button>
                                 <button type="button" wire:click="delete({{ $openItem->id }})" wire:confirm="Delete this automation and all its images?"
                                         class="grid place-items-center h-9 w-9 rounded-lg text-ink-700/60 hover:bg-danger/10 hover:text-danger" title="Delete"><x-icon name="trash" class="w-4 h-4" /></button>

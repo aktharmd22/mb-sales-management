@@ -101,6 +101,32 @@ class PortfolioTest extends TestCase
         $this->assertDatabaseHas('portfolio_items', ['title' => 'IG only graphic', 'type' => 'graphic']);
     }
 
+    public function test_add_and_edit_modal_open_close_is_server_driven(): void
+    {
+        $admin = $this->admin();
+        $item = PortfolioItem::create(['type' => 'website', 'title' => 'Existing', 'is_active' => true, 'uploaded_by' => $admin->id]);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class, ['tab' => 'website'])
+            ->assertSet('showForm', false)
+            ->call('startCreate', 'website')
+            ->assertSet('showForm', true)->assertSet('formType', 'website')->assertSet('editId', null)
+            ->call('startEdit', $item->id)
+            ->assertSet('showForm', true)->assertSet('editId', $item->id)->assertSet('fTitle', 'Existing')
+            ->call('closeForm')
+            ->assertSet('showForm', false);
+    }
+
+    public function test_salesperson_cannot_open_create_modal(): void
+    {
+        $sales = User::factory()->create(['role' => User::ROLE_SALESPERSON]);
+
+        Livewire::actingAs($sales)
+            ->test(Index::class)
+            ->call('startCreate', 'website')
+            ->assertForbidden();
+    }
+
     public function test_admin_can_create_automation_without_image(): void
     {
         $this->actingAs($this->admin())
