@@ -14,6 +14,7 @@ class PortfolioItem extends Model
         'video' => 'Video Ads',
         'graphic' => 'Graphics',
         'automation' => 'Automations',
+        'article' => 'Articles',
     ];
 
     protected $fillable = [

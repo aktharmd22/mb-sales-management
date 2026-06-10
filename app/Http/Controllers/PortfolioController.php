@@ -139,8 +139,8 @@ class PortfolioController extends Controller
             'type' => [$item ? 'nullable' : 'required', Rule::in(array_keys(PortfolioItem::TYPES))],
             'title' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:1000'],
-            // Required for websites & videos; optional Instagram link for graphics.
-            'url' => [in_array($type, ['website', 'video']) ? 'required' : 'nullable', 'url', 'max:500'],
+            // Required for websites, videos & articles; optional Instagram link for graphics.
+            'url' => [in_array($type, ['website', 'video', 'article']) ? 'required' : 'nullable', 'url', 'max:500'],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'max:8192'], // 8 MB
         ], $messages);
     }

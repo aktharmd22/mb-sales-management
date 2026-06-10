@@ -48,6 +48,27 @@ class PortfolioTest extends TestCase
         $this->assertSame('Admin', $item->credentials[0]['label']);
     }
 
+    public function test_admin_can_add_an_article_link(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('portfolio.store'), [
+                'type' => 'article',
+                'title' => 'How we 3x-ed bookings',
+                'url' => 'https://blog.example.com/case-study',
+            ])
+            ->assertRedirect(route('portfolio.index', ['tab' => 'article']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('portfolio_items', ['type' => 'article', 'title' => 'How we 3x-ed bookings']);
+    }
+
+    public function test_article_requires_a_url(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('portfolio.store'), ['type' => 'article', 'title' => 'No link'])
+            ->assertSessionHasErrors('url');
+    }
+
     public function test_admin_can_add_a_video_ad(): void
     {
         $this->actingAs($this->admin())

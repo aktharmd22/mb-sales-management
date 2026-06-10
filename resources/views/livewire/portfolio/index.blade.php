@@ -1,5 +1,5 @@
 <div>
-    <x-page-header title="Portfolio" subtitle="Show clients the work — websites, video ads, graphics and automations.">
+    <x-page-header title="Portfolio" subtitle="Show clients the work — websites, video ads, graphics, automations and articles.">
         @if ($isAdmin)
             <x-slot:actions>
                 <button type="button" wire:click="startCreate('{{ $tab }}')" class="btn-primary">
@@ -12,7 +12,7 @@
     {{-- Tabs --}}
     <div class="flex gap-1 border-b border-ink-100 mb-6 overflow-x-auto no-scrollbar">
         @foreach ($types as $key => $label)
-            @php $icon = ['website' => 'globe', 'video' => 'play', 'graphic' => 'image', 'automation' => 'bolt'][$key]; @endphp
+            @php $icon = ['website' => 'globe', 'video' => 'play', 'graphic' => 'image', 'automation' => 'bolt', 'article' => 'news'][$key]; @endphp
             <button wire:click="$set('tab', '{{ $key }}')"
                     @class([
                         'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap transition',
@@ -25,7 +25,7 @@
     </div>
 
     @if ($items->isEmpty())
-        <x-empty-state :icon="['website' => 'globe', 'video' => 'play', 'graphic' => 'image', 'automation' => 'bolt'][$tab]"
+        <x-empty-state :icon="['website' => 'globe', 'video' => 'play', 'graphic' => 'image', 'automation' => 'bolt', 'article' => 'news'][$tab]"
             title="Nothing here yet"
             message="{{ $isAdmin ? 'Add your first item so the team can show it to clients.' : 'Your manager hasn\'t added anything to this section yet.' }}">
             @if ($isAdmin)
@@ -281,13 +281,36 @@
                 </div>
             @endif
         @endif
+
+        {{-- ===================== ARTICLES (external links) ===================== --}}
+        @if ($tab === 'article')
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                @foreach ($items as $item)
+                    <div class="card p-5 flex flex-col {{ ! $item->is_active ? 'opacity-60' : '' }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="grid place-items-center h-10 w-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                <x-icon name="news" class="w-5 h-5" />
+                            </span>
+                            @if ($isAdmin) @include('livewire.portfolio.partials.admin-actions', ['item' => $item]) @endif
+                        </div>
+                        <h3 class="font-semibold text-ink-900 mt-3">{{ $item->title }}</h3>
+                        @if ($item->description)<p class="text-sm text-ink-700/70 mt-1 line-clamp-3 flex-1">{{ $item->description }}</p>@else<div class="flex-1"></div>@endif
+                        <a href="{{ $item->url }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-600 mt-4">
+                            Read article <x-icon name="external" class="w-4 h-4" />
+                        </a>
+                        @if ($isAdmin && ! $item->is_active)<span class="badge bg-ink-100 text-ink-700 mt-3 self-start">Hidden</span>@endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
     @endif
 
     {{-- ===================== Admin add/edit modal (Livewire-driven visibility) ===================== --}}
     @php
-        $typeLabels = ['website' => 'Websites & Software', 'video' => 'Video Ads', 'graphic' => 'Graphics', 'automation' => 'Automations'];
-        $urlLabels = ['website' => 'Live site URL', 'video' => 'Instagram reel URL', 'graphic' => 'Instagram link (optional)'];
-        $urlPlaceholders = ['website' => 'https://example.com', 'video' => 'https://www.instagram.com/reel/...', 'graphic' => 'https://www.instagram.com/p/...'];
+        $typeLabels = ['website' => 'Websites & Software', 'video' => 'Video Ads', 'graphic' => 'Graphics', 'automation' => 'Automations', 'article' => 'Articles'];
+        $urlLabels = ['website' => 'Live site URL', 'video' => 'Instagram reel URL', 'graphic' => 'Instagram link (optional)', 'article' => 'Article link'];
+        $urlPlaceholders = ['website' => 'https://example.com', 'video' => 'https://www.instagram.com/reel/...', 'graphic' => 'https://www.instagram.com/p/...', 'article' => 'https://example.com/blog/your-article'];
         $eid = $editId ?: old('edit_id');
         $ft = ($errors->any() && old('type')) ? old('type') : $formType;
         $modalOpen = $showForm || $errors->any();
@@ -321,7 +344,7 @@
                                 <div>
                                     <label class="label">{{ $urlLabels[$ft] ?? 'URL' }}</label>
                                     <input type="url" name="url" value="{{ old('url', $fUrl) }}" class="input"
-                                           @if (in_array($ft, ['website', 'video'])) required @endif
+                                           @if (in_array($ft, ['website', 'video', 'article'])) required @endif
                                            placeholder="{{ $urlPlaceholders[$ft] ?? '' }}" />
                                     @error('url') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                                 </div>
